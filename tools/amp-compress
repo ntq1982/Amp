@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+"""Tool to compress Amp FileDatabase objects."""
+
+import os
+import shutil
+import sys
+from optparse import OptionParser
+
+from amp.utilities import FileDatabase
+
+try:
+    input = raw_input  # python 2/3
+except NameError:
+    pass
+
+
+def compress_file(filename):
+    filename = filename.rstrip(os.path.sep)
+    assert filename.endswith('.ampdb')
+    assert 'loose' in os.listdir(filename)
+    FileDatabase(filename).archive()
+
+
+def parser():
+    parser = OptionParser(
+        usage='usage: %prog [options] [filename(s)]\n Compress .ampdb'
+              ' files(Amp FileDatabase objects).')
+    add = parser.add_option
+    add('-r', '--recursive', action='store_true',
+        default=False, help='recursively search and compress .ampdb files')
+    add('-d', '--delete', action='store_true',
+        default=False, help='delete .ampdb files')
+    options, args = parser.parse_args()
+    return options, args
+
+
+options, args = parser()
+
+if options.delete and not options.recursive:
+    raise AssertionError('Delete flag only works with recursive flag.')
+
+if not options.recursive:
+    for filename in args:
+        compress_file(filename)
+else:
+    if len(args) != 1:
+        raise AssertionError('A single argument (top directory) must be '
+                             'supplied with the recursive option.')
+    topdir = args[0]
+    if options.delete:
+        print('This will permanently delete all files/directories ending'
+              ' in .ampdb within the directory {} and its subdirectories.'
+              ' Type "yes" to continue.'.format(topdir))
+        answer = input('Your desire? ')
+        if answer != 'yes':
+            print('Aborting at user request.')
+            sys.exit()
+    if not os.path.isdir(topdir):
+        raise AssertionError('Argument must be a path with recursive option.')
+
+    for dirpath, dirnames, filenames in os.walk(topdir):
+        for dirname in dirnames:
+            if dirname.endswith('.ampdb'):
+                filename = os.path.join(dirpath, dirname)
+                print('Found %s.' % filename)
+                if options.delete:
+                    print('Deleting {}.'.format(filename))
+                    shutil.rmtree(filename)
+                else:
+                    compress_file(filename)
