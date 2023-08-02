@@ -1,0 +1,28 @@
+# This is a sample build configuration for Python.
+# Check our guides at https://confluence.atlassian.com/x/VYk8Lw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: python:3.8.10
+
+pipelines:
+  default:
+    - step:
+        script: # Modify the commands below to build your repository.
+          - pip3 install -U nose
+          - pip3 install -U nose-timer
+          - pip3 install -U numpy
+          - pip3 install -U scipy
+          - pip3 install -U matplotlib
+          - pip3 install -U pyzmq
+          - pip3 install -U pexpect
+          - pip3 install -U --upgrade tensorflow
+#         - pip3 install ase
+          - python -m pip install 'ase @ git+https://gitlab.com/andrew_peterson/ase@calc_results'
+          - apt-get update
+          - apt-get -y install gfortran
+          - AMP=`pwd`
+          - export PYTHONPATH=$AMP:$PYTHONPATH
+          - cd amp/
+          - make
+          - make tests
